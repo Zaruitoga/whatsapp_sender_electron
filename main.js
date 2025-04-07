@@ -1,12 +1,15 @@
 const { app, BrowserWindow } = require('electron');
 const path = require('path');
 const { ipcMain } = require('electron');
+const { sendWhatsAppMessages } = require('./sendWhatsapp');
 
+let whatsappWindow;
+let win;
 
 function createWindow() {
-  const win = new BrowserWindow({
-    width: 800,
-    height: 600,
+  win = new BrowserWindow({
+    width: 300,
+    height: 200,
     webPreferences: {
         nodeIntegration: true,
         contextIsolation: false,
@@ -18,16 +21,32 @@ function createWindow() {
 }
 
 ipcMain.on('open-whatsapp', () => {
-  const whatsappWindow = new BrowserWindow({
+  whatsappWindow = new BrowserWindow({
     width: 1000,
     height: 800,
   });
-
+  win.show()
   const userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36';
   
   whatsappWindow.loadURL('https://web.whatsapp.com', {
     userAgent: userAgent,
   });
+});
+
+ipcMain.on('start-sending', async (event, message, contactList) => {
+    console.log("Données reçues :", message, contactList);
+    if (!whatsappWindow || whatsappWindow.isDestroyed()) {
+        whatsappWindow = new BrowserWindow({
+            width: 1000,
+            height: 800,
+        });
+        await whatsappWindow.loadURL('https://web.whatsapp.com', {
+            userAgent: 'Mozilla/5.0 (...) Chrome/114.0 Safari/537.36'
+        });
+        await new Promise(r => setTimeout(r, 4000));
+    }
+
+    await sendWhatsAppMessages(whatsappWindow, contactList, message);
 });
 
 app.disableHardwareAcceleration();
